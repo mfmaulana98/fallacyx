@@ -13,12 +13,14 @@ pages_build_output_dir = ".svelte-kit/cloudflare"
 # or `wrangler pages secret put <NAME>`.
 # ---------------------------------------------------------------------
 [vars]
-PUBLIC_APP_NAME = "FallacyChecker"
+PUBLIC_APP_NAME = "FallacyX"
 PUBLIC_BRAND_NAME = "Revonalar"
 PUBLIC_ENVIRONMENT = "production"
-PUBLIC_APP_URL = "https://fallacychecker.revonalar.com"
+PUBLIC_APP_URL = "https://fallacyx.pages.dev"
 PUBLIC_API_URL_CLIENT = "https://api.fallacychecker.revonalar.com"
 PUBLIC_SUPABASE_URL = "https://bfhjknbboxhsxbwnmjov.supabase.co"
+PUBLIC_SUPABASE_ANON_KEY="sb_publishable_jOVwFFkTWSeJ48kjcOBJRA_yPmsOy5f"
+
 
 # ---------------------------------------------------------------------
 # Preview deployments (e.g. PRs / non-main branches) get their own vars.
@@ -27,13 +29,3 @@ PUBLIC_SUPABASE_URL = "https://bfhjknbboxhsxbwnmjov.supabase.co"
 PUBLIC_ENVIRONMENT = "staging"
 PUBLIC_APP_URL = "https://preview.fallacychecker.revonalar.com"
 PUBLIC_API_URL_CLIENT = "https://api-staging.fallacychecker.revonalar.com"
-
-# ---------------------------------------------------------------------
-# Secrets to set via the Cloudflare dashboard or
-# `wrangler pages secret put <NAME> --project-name=fallacychecker`:
-#
-#   PUBLIC_SUPABASE_ANON_KEY
-#   SUPABASE_SERVICE_ROLE_KEY
-#   PRIVATE_API_URL
-#   PRIVATE_API_KEY
-# ---------------------------------------------------------------------

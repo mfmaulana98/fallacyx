@@ -18,6 +18,41 @@ class TextAnalysisRequest(BaseModel):
         default="id", description="Language for the system prompt, examples, and explanations."
     )
 
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "text": (
+                        "Everyone I know agrees that this policy is a disaster, "
+                        "so it must be true that it will fail."
+                    ),
+                    "mode": "educational",
+                    "language": "en",
+                }
+            ]
+        }
+    }
+
+
+class UrlAnalysisRequest(BaseModel):
+    """Body for POST /analyze/url."""
+
+    url: str = Field(..., description="HTTP/HTTPS URL of the article to examine.")
+    mode: Literal["quick", "educational"] = Field(
+        default="quick", description="Analysis depth: quick verdict or full educational breakdown."
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "url": "https://www.example.com/news/opinion-piece",
+                    "mode": "quick",
+                }
+            ]
+        }
+    }
+
 
 class YouTubeAnalysisRequest(BaseModel):
     """Body for POST /analyze/youtube."""
@@ -28,3 +63,14 @@ class YouTubeAnalysisRequest(BaseModel):
     mode: Literal["quick", "educational"] = Field(
         default="quick", description="Analysis depth: quick verdict or full educational breakdown."
     )
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                    "mode": "educational",
+                }
+            ]
+        }
+    }

@@ -139,9 +139,19 @@ async def _check_supabase() -> Optional[str]:
     return None
 
 
-@router.get("", response_model=HealthResponse, summary="Liveness probe")
+@router.get(
+    "",
+    response_model=HealthResponse,
+    summary="Liveness probe",
+    description=(
+        "Fast liveness check that does not touch any downstream dependency. "
+        "Should respond in well under 100ms.\n\n"
+        "**Use case:** container orchestration (Kubernetes, Docker) liveness/"
+        "readiness probes."
+    ),
+    response_description="The service is up, with its version and current timestamp.",
+)
 async def health() -> HealthResponse:
-    """Fast liveness check. Should respond in well under 100ms."""
     return HealthResponse(timestamp=_now_iso())
 
 
@@ -149,6 +159,14 @@ async def health() -> HealthResponse:
     "/detailed",
     response_model=DetailedHealthResponse,
     summary="Deep dependency health check",
+    description=(
+        "Concurrently checks every downstream dependency: vLLM, Whisper, "
+        "Qdrant, Redis, and Supabase. Overall status is `critical` if vLLM or "
+        "Supabase is down, `degraded` if any other dependency is down, "
+        "otherwise `healthy`.\n\n"
+        "**Use case:** status pages, alerting, and on-call dashboards."
+    ),
+    response_description="Per-component status, response time, and overall system status.",
 )
 async def health_detailed() -> DetailedHealthResponse:
     """Concurrently checks every downstream dependency."""
@@ -190,7 +208,19 @@ async def health_detailed() -> DetailedHealthResponse:
     )
 
 
-@router.get("/gpu", response_model=GPUHealthResponse, summary="AMD GPU telemetry")
+@router.get(
+    "/gpu",
+    response_model=GPUHealthResponse,
+    summary="AMD GPU telemetry",
+    description=(
+        "Reports VRAM usage, utilization, and temperature for the AMD MI300X "
+        "running the Llama-3-70B inference server, via `rocm-smi`. Returns "
+        "`status: \"unavailable\"` if `rocm-smi` is not present or times out "
+        "(e.g. when running outside the AMD Developer Cloud).\n\n"
+        "**Use case:** GPU capacity dashboards and inference cost monitoring."
+    ),
+    response_description="Current GPU name, VRAM usage, utilization, and temperature, or an unavailable status with detail.",
+)
 async def health_gpu() -> GPUHealthResponse:
     """Reports AMD GPU memory/utilization/temperature via rocm-smi, if available."""
     try:
