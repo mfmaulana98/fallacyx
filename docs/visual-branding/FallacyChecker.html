@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FallacyChecker · by Revonalar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@1,500;1,600;1,700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F4F0;
+    --surface:#FFFFFF;
+    --surface-2:#EFEDE7;
+    --ink:#15141A;
+    --ink-2:#46444E;
+    --muted:#8C8A93;
+    --line:rgba(21,20,26,.10);
+    --line-2:rgba(21,20,26,.16);
+    --red:#DA2B22;
+    --red-deep:#A4161A;
+    --red-soft:rgba(218,43,34,.10);
+    --green:#159A5B;
+    --dark:#121016;
+    --dark-2:#1B1822;
+    --on-dark:#F4F2EE;
+    --on-dark-mut:rgba(244,242,238,.62);
+    --shadow:0 1px 2px rgba(21,20,26,.04), 0 24px 50px -30px rgba(21,20,26,.30);
+    --shadow-lg:0 2px 4px rgba(21,20,26,.05), 0 40px 80px -40px rgba(21,20,26,.40);
+    --r:22px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Archivo", system-ui, sans-serif;
+    font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  h1,h2,h3,h4{font-family:"Archivo",sans-serif;margin:0;font-weight:800;line-height:1.02;letter-spacing:-.025em;}
+  p{margin:0 0 1em;}
+  a{color:inherit;text-decoration:none;}
+  .serif{font-family:"Playfair Display",serif;font-style:italic;font-weight:600;letter-spacing:0;}
+  .mono{font-family:"Space Mono",monospace;}
+  .red{color:var(--red);}
+
+  .wrap{max-width:1240px;margin:0 auto;padding:0 32px;}
+  .page{display:none;}
+  .page.active{display:block;}
+  @keyframes pagein{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion:no-preference){.page.active{animation:pagein .5s ease;}}
+
+  .kicker{font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:var(--red);font-weight:700;}
+  .kicker.mut{color:var(--muted);}
+
+  /* ---------- buttons ---------- */
+  .btn{display:inline-flex;align-items:center;gap:10px;font-family:"Archivo",sans-serif;font-weight:700;
+    font-size:15px;letter-spacing:-.01em;cursor:pointer;border:none;border-radius:100px;
+    padding:14px 24px;transition:transform .15s ease, box-shadow .2s, background .2s;white-space:nowrap;}
+  .btn.red{background:var(--red);color:#fff;box-shadow:0 8px 22px -8px rgba(218,43,34,.7);}
+  .btn.red:hover{transform:translateY(-2px);box-shadow:0 14px 30px -8px rgba(218,43,34,.75);background:#E5362C;}
+  .btn.dark{background:var(--ink);color:#fff;}
+  .btn.dark:hover{transform:translateY(-2px);background:#000;}
+  .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line-2);}
+  .btn.ghost:hover{border-color:var(--ink);background:var(--ink);color:#fff;transform:translateY(-2px);}
+  .btn.lg{padding:17px 30px;font-size:16px;}
+  .btn.ondark.ghost{color:var(--on-dark);border-color:rgba(244,242,238,.28);}
+  .btn.ondark.ghost:hover{background:var(--on-dark);color:var(--ink);border-color:var(--on-dark);}
+
+  /* ---------- nav ---------- */
+  .nav{position:sticky;top:0;z-index:60;background:rgba(245,244,240,.78);backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--line);}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:74px;max-width:1240px;margin:0 auto;padding:0 32px;gap:18px;}
+  .brand{display:flex;align-items:center;gap:11px;cursor:pointer;}
+  .brand .mk{width:38px;height:38px;border-radius:11px;background:var(--ink);color:#fff;display:grid;place-items:center;
+    font-weight:900;font-size:20px;position:relative;overflow:hidden;}
+  .brand .mk::after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:var(--red);
+    right:-5px;bottom:-5px;filter:blur(.5px);}
+  .brand b{font-weight:900;font-size:19px;letter-spacing:-.03em;display:block;line-height:1;}
+  .brand small{font-family:"Space Mono",monospace;font-size:9.5px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase;}
+  .nav-links{display:flex;align-items:center;gap:30px;}
+  .nav-links a{font-size:14.5px;font-weight:600;color:var(--ink-2);transition:color .2s;}
+  .nav-links a:hover{color:var(--red);}
+  .nav-cta{display:flex;align-items:center;gap:12px;}
+  .nav-toggle{display:none;}
+
+  /* ---------- hero ---------- */
+  .hero{position:relative;padding:74px 0 56px;overflow:hidden;}
+  .hero .glow{position:absolute;inset:0;pointer-events:none;z-index:0;}
+  .hero .glow::before{content:"";position:absolute;width:760px;height:760px;border-radius:50%;left:-220px;top:-340px;
+    background:radial-gradient(circle,rgba(218,43,34,.20),rgba(218,43,34,0) 62%);}
+  .hero .glow::after{content:"";position:absolute;width:520px;height:520px;border-radius:50%;right:-120px;bottom:-220px;
+    background:radial-gradient(circle,rgba(218,43,34,.12),rgba(218,43,34,0) 62%);}
+  .hero-grid{position:relative;z-index:1;display:grid;grid-template-columns:1.08fr .92fr;gap:54px;align-items:center;}
+  .hero h1{font-size:clamp(2.9rem,6vw,5.3rem);font-weight:900;letter-spacing:-.04em;text-wrap:balance;}
+  .hero h1 .em{font-family:"Playfair Display",serif;font-style:italic;font-weight:600;color:var(--red);letter-spacing:-.01em;}
+  .hero .lede{font-size:clamp(1.08rem,1.5vw,1.32rem);color:var(--ink-2);max-width:42ch;margin:26px 0 32px;line-height:1.55;}
+  .hero .cta-row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;}
+  .hero .trust{margin-top:26px;display:flex;gap:22px;align-items:center;font-family:"Space Mono",monospace;
+    font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);flex-wrap:wrap;}
+  .hero .trust b{color:var(--ink);font-weight:700;}
+  .hero .trust .dot{width:5px;height:5px;border-radius:50%;background:var(--red);}
+
+  /* hero visual card */
+  .hero-vis{position:relative;}
+  .vcard{background:var(--surface);border:1px solid var(--line);border-radius:26px;box-shadow:var(--shadow-lg);
+    padding:24px;position:relative;z-index:2;}
+  .vcard .vc-top{display:flex;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:1px solid var(--line);}
+  .vc-top .live{display:flex;align-items:center;gap:8px;font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);}
+  .vc-top .live .pulse{width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 0 0 rgba(218,43,34,.5);}
+  @media(prefers-reduced-motion:no-preference){.vc-top .live .pulse{animation:pulse 2s infinite;}}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(218,43,34,.5);}70%{box-shadow:0 0 0 9px rgba(218,43,34,0);}100%{box-shadow:0 0 0 0 rgba(218,43,34,0);}}
+  .vc-top .tag{font-family:"Space Mono",monospace;font-size:11px;color:var(--red);font-weight:700;}
+  .vc-sum{display:flex;align-items:baseline;gap:14px;margin:18px 0 6px;}
+  .vc-sum .big{font-size:3.4rem;font-weight:900;letter-spacing:-.04em;line-height:.9;}
+  .vc-sum .meta{font-family:"Space Mono",monospace;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-2);}
+  .vc-sum .sev{color:var(--red);font-weight:700;}
+  .vc-find{margin-top:16px;border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--surface-2);}
+  .vc-find .fr{display:flex;align-items:center;justify-content:space-between;}
+  .vc-find .fn{font-weight:800;font-size:15px;letter-spacing:-.01em;}
+  .vc-find .fc{font-family:"Space Mono",monospace;font-size:12px;color:var(--red);font-weight:700;}
+  .vc-find .meter{height:6px;border-radius:6px;background:rgba(21,20,26,.08);margin-top:10px;overflow:hidden;}
+  .vc-find .meter i{display:block;height:100%;background:var(--red);border-radius:6px;}
+  .vc-find .ex{font-family:"Playfair Display",serif;font-style:italic;font-size:13.5px;color:var(--ink-2);margin-top:10px;line-height:1.4;}
+  /* floating chips */
+  .chip{position:absolute;z-index:3;background:var(--surface);border:1px solid var(--line);border-radius:100px;
+    padding:9px 15px 9px 12px;display:flex;align-items:center;gap:9px;box-shadow:var(--shadow);
+    font-weight:700;font-size:13.5px;letter-spacing:-.01em;white-space:nowrap;}
+  .chip .ic{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:11px;flex-shrink:0;}
+  .chip.bad .ic{background:var(--red);}
+  .chip.good .ic{background:var(--green);}
+  .chip .sc{font-family:"Space Mono",monospace;color:var(--muted);font-size:11px;font-weight:400;}
+  .chip.c1{top:-22px;left:-30px;transform:rotate(-5deg);}
+  .chip.c2{bottom:42px;left:-46px;transform:rotate(4deg);}
+  .chip.c3{top:84px;right:-30px;transform:rotate(5deg);}
+  @media(prefers-reduced-motion:no-preference){
+    .chip.c1{animation:float1 6s ease-in-out infinite;}
+    .chip.c2{animation:float2 7s ease-in-out infinite;}
+    .chip.c3{animation:float1 6.5s ease-in-out infinite .4s;}
+    @keyframes float1{0%,100%{transform:rotate(-5deg) translateY(0);}50%{transform:rotate(-5deg) translateY(-9px);}}
+    @keyframes float2{0%,100%{transform:rotate(4deg) translateY(0);}50%{transform:rotate(4deg) translateY(8px);}}
+  }
+  .scroll-cue{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:54px;}
+  .scroll-cue .mouse{width:26px;height:40px;border:2px solid var(--line-2);border-radius:14px;position:relative;}
+  .scroll-cue .mouse::after{content:"";position:absolute;left:50%;top:7px;transform:translateX(-50%);width:3px;height:8px;border-radius:2px;background:var(--red);}
+  @media(prefers-reduced-motion:no-preference){.scroll-cue .mouse::after{animation:wheel 1.6s infinite;}}
+  @keyframes wheel{0%{opacity:0;top:7px;}30%{opacity:1;}60%{opacity:1;top:16px;}100%{opacity:0;top:16px;}}
+  .scroll-cue span{font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);}
+
+  /* ---------- section scaffold ---------- */
+  .sec{padding:88px 0;position:relative;}
+  .sec-head{max-width:760px;margin-bottom:44px;}
+  .sec-head h2{font-size:clamp(2.1rem,3.8vw,3.4rem);font-weight:900;letter-spacing:-.035em;margin-top:14px;text-wrap:balance;}
+  .sec-head .em{font-family:"Playfair Display",serif;font-style:italic;font-weight:600;letter-spacing:-.01em;}
+  .sec-head p{font-size:1.14rem;color:var(--ink-2);margin:16px 0 0;max-width:54ch;}
+  .sec-head.center{margin-left:auto;margin-right:auto;text-align:center;}
+
+  /* cards generic */
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);}
+  .icon-tile{width:54px;height:54px;border-radius:15px;background:var(--ink);color:#fff;display:grid;place-items:center;}
+  .icon-tile.red{background:var(--red);box-shadow:0 8px 20px -8px rgba(218,43,34,.6);}
+  .icon-tile svg{width:26px;height:26px;}
+
+  /* stats */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;}
+  .stat{padding:30px;border-radius:var(--r);}
+  .stat .no{font-family:"Space Mono",monospace;font-size:13px;color:var(--red);font-weight:700;letter-spacing:.1em;}
+  .stat h3{font-size:1.5rem;margin:16px 0 10px;font-weight:800;letter-spacing:-.02em;}
+  .stat p{margin:0;color:var(--ink-2);font-size:1.02rem;}
+
+  /* courses */
+  .courses{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;}
+  .course{padding:28px;border-radius:var(--r);display:flex;flex-direction:column;min-height:330px;transition:transform .2s, box-shadow .2s;}
+  .course:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);}
+  .course .pill{align-self:flex-start;display:flex;align-items:center;gap:7px;font-family:"Space Mono",monospace;font-size:10.5px;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--red);font-weight:700;background:var(--red-soft);
+    padding:6px 12px;border-radius:100px;}
+  .course h3{font-size:1.65rem;margin:22px 0 10px;font-weight:800;letter-spacing:-.025em;line-height:1.05;}
+  .course p{color:var(--ink-2);font-size:1rem;flex:1;margin:0 0 18px;}
+  .course .row{display:flex;align-items:center;justify-content:space-between;padding-top:16px;border-top:1px solid var(--line);}
+  .course .meta{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
+  .course .go{font-weight:700;font-size:14px;color:var(--ink);display:inline-flex;gap:6px;align-items:center;transition:gap .2s,color .2s;}
+  .course:hover .go{gap:11px;color:var(--red);}
+
+  /* features */
+  .features{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;}
+  .feature{padding:30px;border-radius:var(--r);}
+  .feature h3{font-size:1.42rem;margin:22px 0 10px;font-weight:800;letter-spacing:-.02em;}
+  .feature .fnum{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.16em;color:var(--muted);text-transform:uppercase;display:block;margin-top:18px;}
+  .feature p{margin:0;color:var(--ink-2);font-size:1rem;}
+
+  /* dark special section */
+  .dark-sec{background:var(--dark);color:var(--on-dark);border-radius:34px;position:relative;overflow:hidden;margin:0 32px;}
+  .dark-sec .glow{position:absolute;inset:0;pointer-events:none;}
+  .dark-sec .glow::before{content:"";position:absolute;width:680px;height:680px;border-radius:50%;right:-180px;top:-260px;
+    background:radial-gradient(circle,rgba(218,43,34,.34),rgba(218,43,34,0) 60%);}
+  .dark-sec .glow::after{content:"";position:absolute;width:420px;height:420px;border-radius:50%;left:-140px;bottom:-180px;
+    background:radial-gradient(circle,rgba(218,43,34,.18),rgba(218,43,34,0) 62%);}
+  .dark-in{position:relative;z-index:1;display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;padding:64px 60px;}
+  .dark-in .badge{display:inline-flex;align-items:center;gap:8px;font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:#fff;background:var(--red);padding:7px 14px;border-radius:100px;font-weight:700;margin-bottom:22px;}
+  .dark-in h2{font-size:clamp(2.2rem,3.6vw,3.4rem);font-weight:900;letter-spacing:-.035em;line-height:1;}
+  .dark-in h2 .em{font-family:"Playfair Display",serif;font-style:italic;font-weight:600;color:#fff;letter-spacing:-.01em;}
+  .dark-in p{color:var(--on-dark-mut);font-size:1.12rem;margin:18px 0 30px;max-width:42ch;}
+  .glass{background:rgba(244,242,238,.05);border:1px solid rgba(244,242,238,.12);border-radius:20px;backdrop-filter:blur(8px);}
+  .dark-vis{display:grid;gap:14px;}
+  .dark-vis .gi{display:flex;align-items:center;gap:14px;padding:16px 18px;}
+  .dark-vis .gi .it{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;flex-shrink:0;color:#fff;}
+  .dark-vis .gi .it.r{background:var(--red);} .dark-vis .gi .it.n{background:rgba(244,242,238,.1);}
+  .dark-vis .gi .t{font-weight:800;font-size:15px;}
+  .dark-vis .gi .s{font-family:"Space Mono",monospace;font-size:11px;color:var(--on-dark-mut);letter-spacing:.04em;}
+  .dark-vis .gi .sc{margin-left:auto;font-family:"Space Mono",monospace;font-weight:700;color:#fff;}
+
+  /* detect grid */
+  .detect{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+  .fcard{padding:26px;border-radius:18px;transition:transform .2s, box-shadow .2s, border-color .2s;}
+  .fcard:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);}
+  .fcard .top{display:flex;align-items:center;justify-content:space-between;}
+  .fcard .no{font-family:"Space Mono",monospace;font-size:12px;color:var(--muted);font-weight:700;}
+  .fcard .x{width:24px;height:24px;border-radius:50%;background:var(--red-soft);color:var(--red);display:grid;place-items:center;font-size:13px;font-weight:700;}
+  .fcard h3{font-size:1.3rem;margin:14px 0 9px;font-weight:800;letter-spacing:-.02em;}
+  .fcard .def{color:var(--ink-2);font-size:.96rem;margin:0 0 14px;}
+  .fcard .ex{font-family:"Playfair Display",serif;font-style:italic;font-size:.96rem;color:var(--red-deep);
+    border-left:2px solid var(--red);padding-left:13px;margin:0;}
+
+  /* manifesto */
+  .manifesto{display:grid;grid-template-columns:.85fr 1.15fr;gap:54px;align-items:center;}
+  .manifesto .ink{display:grid;place-items:center;}
+  .manifesto .ink svg{width:100%;max-width:300px;height:auto;}
+  .manifesto blockquote{margin:0;font-family:"Playfair Display",serif;font-style:italic;font-weight:600;
+    font-size:clamp(1.7rem,3vw,2.7rem);line-height:1.22;letter-spacing:-.01em;text-wrap:balance;}
+  .manifesto blockquote .hl{color:var(--red);}
+  .manifesto .qmark{font-family:"Playfair Display",serif;font-style:italic;font-size:4rem;color:var(--red);line-height:0;display:block;height:34px;}
+  .manifesto .src{font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:26px 0 0;}
+  .manifesto .body{color:var(--ink-2);font-size:1.08rem;margin:22px 0 30px;max-width:52ch;}
+
+  /* footer */
+  .footer{background:var(--dark);color:var(--on-dark);margin-top:0;}
+  .footer-in{padding:64px 32px 48px;max-width:1240px;margin:0 auto;}
+  .footer-top{display:flex;justify-content:space-between;gap:40px;flex-wrap:wrap;align-items:flex-start;padding-bottom:40px;border-bottom:1px solid rgba(244,242,238,.12);}
+  .footer .wm{font-weight:900;font-size:2.4rem;letter-spacing:-.04em;}
+  .footer .wm span{color:var(--red);}
+  .footer .motto{font-family:"Playfair Display",serif;font-style:italic;font-size:1.7rem;max-width:14ch;text-align:right;color:#fff;}
+  .footer .fbot{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-top:26px;
+    font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--on-dark-mut);}
+
+  /* ===================== CHECKER ===================== */
+  .ck-hero{position:relative;padding:64px 0 30px;overflow:hidden;}
+  .ck-hero .glow{position:absolute;inset:0;pointer-events:none;}
+  .ck-hero .glow::before{content:"";position:absolute;width:620px;height:620px;border-radius:50%;left:50%;top:-360px;transform:translateX(-50%);
+    background:radial-gradient(circle,rgba(218,43,34,.14),rgba(218,43,34,0) 62%);}
+  .ck-hero .in{position:relative;z-index:1;text-align:center;max-width:760px;margin:0 auto;}
+  .ck-hero h1{font-size:clamp(2.6rem,5vw,4.4rem);font-weight:900;letter-spacing:-.04em;}
+  .ck-hero h1 .em{font-family:"Playfair Display",serif;font-style:italic;font-weight:600;color:var(--red);}
+  .ck-hero .sub{font-size:1.18rem;color:var(--ink-2);margin:18px auto 0;max-width:50ch;}
+  .ck-meta{display:flex;justify-content:center;gap:26px;margin-top:24px;font-family:"Space Mono",monospace;font-size:11px;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--muted);flex-wrap:wrap;}
+  .ck-meta b{color:var(--red);}
+
+  .console{max-width:880px;margin:34px auto 0;background:var(--surface);border:1px solid var(--line);border-radius:26px;box-shadow:var(--shadow-lg);overflow:hidden;}
+  .tabs{display:flex;gap:6px;padding:14px 14px 0;flex-wrap:wrap;}
+  .tab{flex:1;min-width:120px;display:flex;align-items:center;justify-content:center;gap:9px;font-family:"Archivo",sans-serif;
+    font-weight:700;font-size:14px;cursor:pointer;background:transparent;border:none;color:var(--muted);
+    padding:14px 12px;border-radius:14px 14px 0 0;transition:color .2s, background .2s;}
+  .tab svg{width:17px;height:17px;}
+  .tab:hover{color:var(--ink);}
+  .tab.active{color:var(--ink);background:var(--surface-2);}
+  .tab.active{box-shadow:inset 0 -3px 0 var(--red);}
+  .tab-body{border-top:1px solid var(--line);}
+  .panel{display:none;padding:28px;}
+  .panel.active{display:block;}
+  .panel .lab{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:12px;}
+  textarea,input.txt{width:100%;font-family:"Archivo",sans-serif;font-size:1.06rem;color:var(--ink);background:var(--surface-2);
+    border:1.5px solid var(--line);border-radius:16px;padding:16px 18px;resize:vertical;line-height:1.55;transition:border-color .2s, background .2s;}
+  textarea{min-height:170px;}
+  textarea:focus,input.txt:focus{outline:none;border-color:var(--red);background:#fff;}
+  textarea::placeholder,input.txt::placeholder{color:var(--muted);}
+  .panel .hint{font-family:"Space Mono",monospace;font-size:11px;color:var(--muted);margin-top:12px;letter-spacing:.02em;}
+  .panel .hint a{color:var(--red);cursor:pointer;border-bottom:1px solid var(--red);}
+  .drop{border:1.5px dashed var(--line-2);border-radius:18px;background:var(--surface-2);padding:42px 24px;text-align:center;cursor:pointer;transition:border-color .2s, background .2s;}
+  .drop:hover,.drop.over{border-color:var(--red);background:#fff;}
+  .drop .it{width:56px;height:56px;border-radius:16px;background:var(--ink);color:#fff;display:grid;place-items:center;margin:0 auto 16px;}
+  .drop .big{font-weight:800;font-size:1.25rem;letter-spacing:-.02em;}
+  .drop .small{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:8px;}
+  .drop .file{margin-top:14px;font-family:"Space Mono",monospace;font-size:13px;color:var(--red);font-weight:700;}
+  .runbar{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:22px 28px;border-top:1px solid var(--line);background:var(--surface-2);flex-wrap:wrap;}
+  .runbar .note{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);max-width:38ch;}
+
+  .loading{display:none;padding:60px 28px;text-align:center;border-top:1px solid var(--line);}
+  .loading.active{display:block;}
+  .progress{max-width:520px;margin:0 auto;height:8px;border-radius:8px;background:var(--surface-2);overflow:hidden;}
+  .progress i{display:block;height:100%;width:0;background:var(--red);border-radius:8px;transition:width .25s linear;}
+  .loading .pct{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.16em;color:var(--muted);margin-top:14px;}
+  .loading .msg{font-family:"Playfair Display",serif;font-style:italic;font-size:clamp(1.4rem,2.6vw,2rem);margin-top:26px;min-height:1.3em;transition:opacity .2s;}
+
+  .results{display:none;border-top:1px solid var(--line);}
+  .results.active{display:block;animation:pagein .5s ease;}
+  .verdict{background:var(--dark);color:var(--on-dark);padding:34px 34px;position:relative;overflow:hidden;}
+  .verdict .glow{position:absolute;inset:0;pointer-events:none;}
+  .verdict .glow::before{content:"";position:absolute;width:480px;height:480px;border-radius:50%;right:-160px;top:-200px;background:radial-gradient(circle,rgba(218,43,34,.32),rgba(218,43,34,0) 60%);}
+  .verdict .vtop{position:relative;z-index:1;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--on-dark-mut);
+    padding-bottom:20px;border-bottom:1px solid rgba(244,242,238,.14);}
+  .verdict .vgrid{position:relative;z-index:1;display:grid;grid-template-columns:auto auto 1fr;gap:34px;align-items:center;margin-top:24px;}
+  .verdict .vs .n{font-size:3.4rem;font-weight:900;letter-spacing:-.04em;line-height:.85;color:#fff;}
+  .verdict .vs .sev{font-size:1.9rem;font-weight:900;letter-spacing:-.03em;color:var(--red);}
+  .verdict .vs .l{font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--on-dark-mut);margin-top:8px;}
+  .verdict .vsay{font-family:"Playfair Display",serif;font-style:italic;font-weight:600;font-size:1.4rem;line-height:1.25;color:#fff;}
+  @media(max-width:680px){.verdict .vgrid{grid-template-columns:1fr 1fr;}.verdict .vsay{grid-column:1/-1;}}
+
+  .findings{padding:14px 34px 30px;}
+  .finding{padding:28px 0;border-bottom:1px solid var(--line);}
+  .finding:last-child{border-bottom:none;}
+  .finding .fhead{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+  .finding .fhead .l{display:flex;align-items:center;gap:13px;}
+  .finding .fhead .x{width:30px;height:30px;border-radius:9px;background:var(--red-soft);color:var(--red);display:grid;place-items:center;font-weight:800;flex-shrink:0;}
+  .finding h3{font-size:1.55rem;font-weight:800;letter-spacing:-.025em;}
+  .finding .conf{text-align:right;}
+  .finding .conf .v{font-family:"Space Mono",monospace;font-size:14px;font-weight:700;color:var(--red);}
+  .finding .conf .meter{width:120px;height:6px;border-radius:6px;background:rgba(21,20,26,.08);margin-top:6px;overflow:hidden;}
+  .finding .conf .meter i{display:block;height:100%;background:var(--red);border-radius:6px;}
+  .finding .lab{font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);display:block;margin:18px 0 7px;}
+  .finding .excerpt{font-family:"Playfair Display",serif;font-style:italic;font-size:1.12rem;background:var(--surface-2);
+    border-left:3px solid var(--red);border-radius:0 12px 12px 0;padding:15px 20px;margin:0;color:var(--ink);}
+  .finding .explain{color:var(--ink-2);margin:0;}
+  .finding .fix{background:var(--red-soft);border-radius:14px;padding:15px 18px;margin-top:14px;}
+  .finding .fix p{margin:0;color:var(--ink);}
+  .finding .fix .lab{margin-top:0;color:var(--red);}
+  .after{padding:32px 34px 38px;text-align:center;background:var(--surface-2);border-top:1px solid var(--line);}
+  .after .join{font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.04em;color:var(--muted);margin-top:20px;}
+  .after .join a{color:var(--red);cursor:pointer;border-bottom:1px solid var(--red);}
+
+  /* responsive */
+  @media(max-width:960px){
+    .hero-grid{grid-template-columns:1fr;gap:46px;}
+    .hero-vis{max-width:440px;margin:0 auto;width:100%;}
+    .dark-in{grid-template-columns:1fr;gap:34px;padding:48px 36px;}
+    .manifesto{grid-template-columns:1fr;gap:30px;}
+    .manifesto .ink{order:-1;}
+    .stats,.courses,.features,.detect{grid-template-columns:1fr 1fr;}
+    .nav-links{display:none;}
+  }
+  @media(max-width:680px){
+    body{font-size:16px;}
+    .wrap{padding:0 20px;}
+    .nav-in{padding:0 20px;}
+    .stats,.courses,.features,.detect{grid-template-columns:1fr;}
+    .dark-sec{margin:0 20px;}
+    .footer .motto{text-align:left;}
+    .chip{display:none;}
+    .nav-cta .btn.ghost{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== LANDING ===================== -->
+<main id="landing" class="page active">
+
+  <nav class="nav">
+    <div class="nav-in">
+      <div class="brand" onclick="go('landing')">
+        <span class="mk">R</span>
+        <span><b>Revonalar</b><small>FallacyChecker</small></span>
+      </div>
+      <div class="nav-links">
+        <a onclick="scrollToId('courses')">Courses</a>
+        <a onclick="scrollToId('features')">Features</a>
+        <a onclick="scrollToId('detect')">What we detect</a>
+        <a onclick="scrollToId('manifesto')">Manifesto</a>
+      </div>
+      <div class="nav-cta">
+        <a class="btn ghost" onclick="scrollToId('courses')">Free courses</a>
+        <a class="btn red" onclick="go('checker')">Start Checking</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="glow"></div>
+    <div class="wrap">
+      <div class="hero-grid">
+        <div>
+          <p class="kicker">Revonalar · Critical Thinking Engine</p>
+          <h1 style="margin-top:22px;">Every tyranny began as a sentence nobody <span class="em">questioned.</span></h1>
+          <p class="lede">FallacyChecker reads any argument — text, a link, a YouTube video, an uploaded recording — and names the broken logic hiding inside it. Modern tools. Sharper minds. A quieter revolution.</p>
+          <div class="cta-row">
+            <a class="btn red lg" onclick="go('checker')">Start Checking →</a>
+            <a class="btn ghost lg" onclick="scrollToId('how')">See how it works</a>
+          </div>
+          <div class="trust">
+            <span><b>Free</b>, forever</span><span class="dot"></span>
+            <span>No login</span><span class="dot"></span>
+            <span>Nothing stored</span>
+          </div>
+        </div>
+
+        <div class="hero-vis">
+          <div class="chip good c1"><span class="ic">✓</span>Sound argument</div>
+          <div class="chip bad c2"><span class="ic">✕</span>Straw Man <span class="sc">0.88</span></div>
+          <div class="chip bad c3"><span class="ic">✕</span>Ad Hominem <span class="sc">0.93</span></div>
+          <div class="vcard">
+            <div class="vc-top">
+              <span class="live"><span class="pulse"></span>Live verdict</span>
+              <span class="tag">RVN · TRIBUNAL</span>
+            </div>
+            <div class="vc-sum">
+              <span class="big">3</span>
+              <span class="meta">fallacies found<br><span class="sev">Severity · Substantial</span></span>
+            </div>
+            <div class="vc-find">
+              <div class="fr"><span class="fn">Ad Hominem</span><span class="fc">0.93</span></div>
+              <div class="meter"><i style="width:93%"></i></div>
+              <p class="ex">“Anyone who questions this clearly hasn't read a single book — they're just bitter.”</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="scroll-cue">
+        <div class="mouse"></div>
+        <span>Scroll to discover</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- WHY IT MATTERS -->
+  <section class="sec" id="how">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="kicker">Why it matters now</p>
+        <h2>Everyone speaks. Almost no one is taught <span class="em">how to think.</span></h2>
+        <p>We intend to change the ratio — with tools sharp enough for the age, and a discipline old enough to outlast it.</p>
+      </div>
+      <div class="stats">
+        <div class="card stat">
+          <span class="no">01</span>
+          <h3>Speech is cheap.</h3>
+          <p>Everyone has a platform. Almost no one has a method. We hand you the method — and we don't charge for it.</p>
+        </div>
+        <div class="card stat">
+          <span class="no">02</span>
+          <h3>Logic is learnable.</h3>
+          <p>Fallacies aren't a measure of intelligence. They're patterns — and patterns can be named, taught, and defeated.</p>
+        </div>
+        <div class="card stat">
+          <span class="no">03</span>
+          <h3>Thinking is collective.</h3>
+          <p>A sharpened mind, alone, is a hobby. A movement of sharpened minds is a force power has always feared.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COURSES -->
+  <section class="sec" id="courses" style="padding-top:0;">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="kicker">Free · open · self-paced</p>
+        <h2>The free curriculum</h2>
+        <p>Three paths into the discipline of reason — unlocked from the academy and handed to the public. No fee, no gate, no excuse.</p>
+      </div>
+      <div class="courses">
+        <div class="card course">
+          <span class="pill">● Free course · I</span>
+          <h3>Mantiq for the Public</h3>
+          <p>The classical science of valid reasoning — taken out of the seminary and rewritten in plain language for everyone. Premises, terms, and proof, from the ground up.</p>
+          <div class="row"><span class="meta">14 lessons · ~6 hrs</span><a class="go" onclick="go('checker')">Enroll →</a></div>
+        </div>
+        <div class="card course">
+          <span class="pill">● Free course · II</span>
+          <h3>Western Logic</h3>
+          <p>From Aristotle's syllogism to the modern catalogue of informal fallacies. The full Western toolkit for building arguments that hold — and dismantling those that don't.</p>
+          <div class="row"><span class="meta">18 lessons · ~8 hrs</span><a class="go" onclick="go('checker')">Enroll →</a></div>
+        </div>
+        <div class="card course">
+          <span class="pill">● Free course · III</span>
+          <h3>The Revonalar Curriculum</h3>
+          <p>Our own path. Spot manipulation in the wild — ads, speeches, feeds, viral clips — and learn to construct arguments no one can knock down.</p>
+          <div class="row"><span class="meta">22 lessons · ~10 hrs</span><a class="go" onclick="go('checker')">Enroll →</a></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="sec" id="features" style="padding-top:0;">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="kicker">The arsenal</p>
+        <h2>Tools for the thinking citizen</h2>
+        <p>Not a feature list — an arsenal. Each one built to turn passive scrolling into active reasoning.</p>
+      </div>
+      <div class="features">
+        <div class="card feature">
+          <div class="icon-tile red">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9l5 3-5 3z" fill="currentColor" stroke="none"/></svg>
+          </div>
+          <span class="fnum">Feature 01</span>
+          <h3>Video Trap Engine</h3>
+          <p>Paste a YouTube link. We transcribe it, then trace every rhetorical trap laid for the viewer — quote by quote, with timestamps.</p>
+        </div>
+        <div class="card feature">
+          <div class="icon-tile">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>
+          </div>
+          <span class="fnum">Feature 02</span>
+          <h3>Learning Gamification</h3>
+          <p>Streaks, ranks, and badges of rigour. Turn critical thinking into a daily practice you actually keep — and level up with every argument you break.</p>
+        </div>
+        <div class="card feature">
+          <div class="icon-tile">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8 8 0 0 1-11.6 7.1L4 20l1.4-5A8 8 0 1 1 21 11.5z"/><path d="M8.5 11.5h7M8.5 14.5h4"/></svg>
+          </div>
+          <span class="fnum">Feature 03</span>
+          <h3>Social Media, Rebuilt</h3>
+          <p>A feed designed for argument, not outrage. Post a claim, get it stress-tested by a community that came to think — not to win.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DARK SPECIAL: FALLACY CHECK -->
+  <section class="sec" style="padding-top:0;padding-bottom:88px;">
+    <div class="dark-sec">
+      <div class="glow"></div>
+      <div class="dark-in">
+        <div>
+          <span class="badge">⚡ The headline tool</span>
+          <h2>One field. Any argument.<br>An instant <span class="em">verdict.</span></h2>
+          <p>Text, a link, a video, a recording — the Fallacy Check names the broken logic inside it in seconds, in plain language. This is where the movement begins.</p>
+          <a class="btn red lg" onclick="go('checker')">Open the Checker →</a>
+        </div>
+        <div class="dark-vis">
+          <div class="glass gi"><span class="it r"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span><div><div class="t">Paste anything</div><div class="s">text · url · youtube · audio</div></div></div>
+          <div class="glass gi"><span class="it n"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></span><div><div class="t">We examine the logic</div><div class="s">every claim, cross-examined</div></div></div>
+          <div class="glass gi"><span class="it r"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></span><div><div class="t">Get a plain verdict</div><div class="s">named · scored · explained</div></div><span class="sc">3 found</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHAT WE DETECT -->
+  <section class="sec" id="detect" style="padding-top:0;">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="kicker">The field guide</p>
+        <h2>What we detect</h2>
+        <p>Learn the enemy's playbook. Six of the most common traps — named, defined, and caught in the act.</p>
+      </div>
+      <div class="detect">
+        <div class="card fcard">
+          <div class="top"><span class="no">№ 01</span><span class="x">✕</span></div>
+          <h3>Ad Hominem</h3>
+          <p class="def">Attacking the speaker instead of the argument, so the point never has to be answered.</p>
+          <p class="ex">"You're broke, so your economic plan is worthless."</p>
+        </div>
+        <div class="card fcard">
+          <div class="top"><span class="no">№ 02</span><span class="x">✕</span></div>
+          <h3>Straw Man</h3>
+          <p class="def">Swapping a real claim for a weaker, distorted version — then knocking that one down.</p>
+          <p class="ex">"You want safer roads? So you want to ban all cars."</p>
+        </div>
+        <div class="card fcard">
+          <div class="top"><span class="no">№ 03</span><span class="x">✕</span></div>
+          <h3>False Dichotomy</h3>
+          <p class="def">Forcing two options where many exist. With us, or against us — no third path allowed.</p>
+          <p class="ex">"Either we cut every program, or the nation collapses."</p>
+        </div>
+        <div class="card fcard">
+          <div class="top"><span class="no">№ 04</span><span class="x">✕</span></div>
+          <h3>Slippery Slope</h3>
+          <p class="def">Claiming one small step triggers catastrophe — without showing why each link must follow.</p>
+          <p class="ex">"Let students retake one test and soon grades mean nothing."</p>
+        </div>
+        <div class="card fcard">
+          <div class="top"><span class="no">№ 05</span><span class="x">✕</span></div>
+          <h3>Appeal to Authority</h3>
+          <p class="def">Treating a claim as proven because someone important said it — never establishing why.</p>
+          <p class="ex">"A famous doctor endorsed it, so it must be safe."</p>
+        </div>
+        <div class="card fcard">
+          <div class="top"><span class="no">№ 06</span><span class="x">✕</span></div>
+          <h3>Hasty Generalization</h3>
+          <p class="def">Drawing a sweeping rule from a handful of cases — the exception dressed up as the law.</p>
+          <p class="ex">"Two bad experiences, so the whole industry is corrupt."</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MANIFESTO -->
+  <section class="sec" id="manifesto" style="padding-top:0;">
+    <div class="wrap">
+      <div class="manifesto">
+        <div class="ink">
+          <!-- hand-drawn pen sketch: a quill writing over a broken column -->
+          <svg viewBox="0 0 260 280" fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <!-- classical broken column -->
+            <path d="M70 252 C66 250, 64 248, 64 244 C92 242, 132 243, 160 245 C160 249, 158 251, 154 252 C122 254, 100 254, 70 252 Z"/>
+            <path d="M78 244 L84 150 M104 244 L108 150 M132 245 L132 150 M156 245 L150 150"/>
+            <path d="M72 150 C70 146, 72 142, 78 141 C108 139, 140 140, 158 143 C162 145, 162 149, 158 151 C126 152, 100 152, 72 150 Z"/>
+            <!-- jagged break top of column -->
+            <path d="M76 141 L84 120 L96 134 L108 112 L122 130 L134 110 L148 132 L156 118 L160 143"/>
+            <!-- quill -->
+            <path d="M196 60 C150 96, 120 130, 104 168 C118 162, 134 150, 150 132 C168 112, 184 86, 196 60 Z"/>
+            <path d="M196 60 C182 78, 170 96, 160 116 M186 74 C176 88, 168 102, 162 116"/>
+            <path d="M104 168 L96 184 M104 168 C100 174, 96 178, 90 180"/>
+            <!-- ink line being written -->
+            <path d="M70 206 C100 200, 130 210, 162 204 S210 198, 216 204" stroke="var(--red)" stroke-dasharray="0"/>
+            <path d="M70 220 C96 216, 120 222, 140 219" stroke="var(--red)"/>
+          </svg>
+        </div>
+        <div>
+          <span class="qmark">“</span>
+          <blockquote>To think clearly in a world engineered to confuse you is not a skill. It is an <span class="hl">act of resistance.</span></blockquote>
+          <p class="body">The machine can name a fallacy in a second; only a trained mind can refuse to fall for one. We build the sharpest tools of the age — and still insist that you sharpen yourself. Use the technology. Never outsource the thinking.</p>
+          <div class="cta-row" style="display:flex;gap:14px;flex-wrap:wrap;">
+            <a class="btn red lg" onclick="go('checker')">Start Checking →</a>
+            <a class="btn ghost lg" onclick="scrollToId('courses')">Join the movement</a>
+          </div>
+          <p class="src">— The Revonalar Manifesto, Article I</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-in">
+      <div class="footer-top">
+        <div>
+          <div class="wm">Fallacy<span>Checker</span></div>
+          <p style="color:var(--on-dark-mut);max-width:36ch;margin:16px 0 0;">A critical-thinking engine by Revonalar. Free curriculum, open tools, and a verdict on any argument you feed it.</p>
+        </div>
+        <div class="motto">Think, or be thought for.</div>
+      </div>
+      <div class="fbot">
+        <span>© 2026 Revonalar · Reason is the original revolution</span>
+        <span>Built for the AMD Developer Hackathon 2026</span>
+      </div>
+    </div>
+  </footer>
+</main>
+
+<!-- ===================== CHECKER ===================== -->
+<main id="checker" class="page">
+  <nav class="nav">
+    <div class="nav-in">
+      <div class="brand" onclick="go('landing')">
+        <span class="mk">R</span>
+        <span><b>Revonalar</b><small>FallacyChecker</small></span>
+      </div>
+      <div class="nav-links">
+        <a onclick="go('landing')">← Back to home</a>
+      </div>
+      <div class="nav-cta">
+        <a class="btn ghost" onclick="go('landing')">Home</a>
+        <a class="btn red" onclick="resetChecker()">New check</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="ck-hero">
+    <div class="glow"></div>
+    <div class="wrap">
+      <div class="in">
+        <p class="kicker">Section IV · The examination</p>
+        <h1 style="margin-top:18px;">The Fallacy <span class="em">Checker</span></h1>
+        <p class="sub">Submit any argument — paste it, link it, or upload it. In seconds, every broken piece of logic is named, scored, and explained in plain language.</p>
+        <div class="ck-meta">
+          <span>Tribunal No. <b>RVN-2026-0609</b></span>
+          <span>Filed · <b id="filedate">09 June 2026</b></span>
+          <span>Confidential · nothing stored</span>
+        </div>
+      </div>
+
+      <div class="console">
+        <div class="tabs" id="tabs">
+          <button class="tab active" data-panel="text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Text</button>
+          <button class="tab" data-panel="url"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></svg>URL</button>
+          <button class="tab" data-panel="youtube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="3"/><path d="M10 9l5 3-5 3z" fill="currentColor" stroke="none"/></svg>YouTube</button>
+          <button class="tab" data-panel="upload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M8 8l4-4 4 4M5 20h14"/></svg>Upload</button>
+        </div>
+        <div class="tab-body">
+          <div id="formArea">
+            <div class="panel active" data-panel="text">
+              <span class="lab">Paste the argument</span>
+              <textarea id="inText" placeholder="Paste a speech, a comment, an article, a thread — anything that claims to make a point…"></textarea>
+              <p class="hint">Working from a blank page? <a onclick="loadSample()">Load a sample argument →</a></p>
+            </div>
+            <div class="panel" data-panel="url">
+              <span class="lab">Article or page URL</span>
+              <input class="txt" id="inUrl" type="text" placeholder="https://example.com/the-op-ed-everyone-is-sharing">
+              <p class="hint">We fetch the text, strip the noise, and examine the reasoning underneath.</p>
+            </div>
+            <div class="panel" data-panel="youtube">
+              <span class="lab">YouTube link</span>
+              <input class="txt" id="inYt" type="text" placeholder="https://youtube.com/watch?v=…">
+              <p class="hint">The Video Trap Engine transcribes the audio and traces every rhetorical trap, with timestamps.</p>
+            </div>
+            <div class="panel" data-panel="upload">
+              <span class="lab">Upload audio or document</span>
+              <div class="drop" id="drop">
+                <div class="it"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M8 8l4-4 4 4M5 20h14"/></svg></div>
+                <div class="big">Drop a file, or click to browse</div>
+                <div class="small">MP3 · WAV · M4A · PDF · DOCX · TXT</div>
+                <div class="file" id="fileName"></div>
+                <input type="file" id="fileInput" accept=".mp3,.wav,.m4a,.pdf,.docx,.txt,audio/*" style="display:none">
+              </div>
+            </div>
+          </div>
+
+          <div class="runbar" id="runbar">
+            <span class="note">No account. No history kept. Your words are examined and forgotten.</span>
+            <button class="btn red lg" onclick="runAnalysis()">Analyze the Argument →</button>
+          </div>
+
+          <div class="loading" id="loading">
+            <div class="progress"><i id="bar"></i></div>
+            <div class="pct" id="pct">0%</div>
+            <div class="msg" id="loadMsg">Reading the argument…</div>
+          </div>
+
+          <div class="results" id="results">
+            <div class="verdict">
+              <div class="glow"></div>
+              <div class="vtop">
+                <span>The Tribunal finds —</span>
+                <span>Examined <b id="rdate">09 June 2026 · 14:22</b></span>
+              </div>
+              <div class="vgrid">
+                <div class="vs"><div class="n" id="rCount">3</div><div class="l">Fallacies found</div></div>
+                <div class="vs"><div class="sev" id="rSev">SUBSTANTIAL</div><div class="l">Severity of reasoning</div></div>
+                <div class="vsay" id="rVerdict">The argument is rhetorically loud and logically hollow — it persuades by feeling, not by proof.</div>
+              </div>
+            </div>
+            <div class="findings" id="findings"></div>
+            <div class="after">
+              <a class="btn dark lg" onclick="resetChecker()">↺ Check another argument</a>
+              <p class="join">A sharper mind keeps score. <a onclick="go('landing')">Join Revonalar →</a> to track your progress, earn ranks, and learn the patterns by heart.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-in">
+      <div class="footer-top">
+        <div>
+          <div class="wm">Fallacy<span>Checker</span></div>
+          <p style="color:var(--on-dark-mut);max-width:36ch;margin:16px 0 0;">Submit an argument. Receive a verdict. Then go sharpen the mind that made it.</p>
+        </div>
+        <div class="motto">Reason is a weapon.</div>
+      </div>
+      <div class="fbot">
+        <span>© 2026 Revonalar · No login required</span>
+        <span>Built for the AMD Developer Hackathon 2026</span>
+      </div>
+    </div>
+  </footer>
+</main>
+
+<script>
+  function go(id){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0,0);
+    history.replaceState(null,'','#'+id);
+  }
+  function scrollToId(id){
+    if(!document.getElementById('landing').classList.contains('active')) go('landing');
+    const el=document.getElementById(id);
+    if(el){const y=el.getBoundingClientRect().top+window.scrollY-90;window.scrollTo({top:y,behavior:'smooth'});}
+  }
+  if(location.hash==='#checker') go('checker');
+
+  document.getElementById('tabs').addEventListener('click',e=>{
+    const t=e.target.closest('.tab'); if(!t) return;
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    const key=t.dataset.panel;
+    document.querySelectorAll('#formArea .panel').forEach(p=>p.classList.toggle('active',p.dataset.panel===key));
+  });
+
+  const drop=document.getElementById('drop'),fileInput=document.getElementById('fileInput'),fileName=document.getElementById('fileName');
+  drop.addEventListener('click',()=>fileInput.click());
+  fileInput.addEventListener('change',()=>{if(fileInput.files[0])fileName.textContent='✓ '+fileInput.files[0].name;});
+  ['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
+  ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
+  drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)fileName.textContent='✓ '+f.name;});
+
+  function loadSample(){
+    document.getElementById('inText').value="Look, anyone who questions this policy clearly hasn't read a single book on economics — they're just bitter. The choice is simple: either we pass it exactly as written, or the whole country falls apart by next year. And honestly, Professor Hargrove from the institute backed it, so really, what more proof does anyone need?";
+  }
+
+  const MOCK={count:3,severity:"SUBSTANTIAL",
+    verdict:"The argument is rhetorically loud and logically hollow — it persuades by feeling, then dares you to disagree.",
+    fallacies:[
+      {name:"Ad Hominem",confidence:0.93,
+        excerpt:"Anyone who questions this policy clearly hasn't read a single book… they're just bitter.",
+        explain:"Rather than answering the objection, the speaker discredits the objector — implying critics are ignorant and emotionally compromised. The argument's merit is never actually addressed.",
+        fix:"Engage the strongest version of the criticism directly. If the policy is sound, it should survive a fair objection without insulting the person raising it."},
+      {name:"False Dichotomy",confidence:0.86,
+        excerpt:"Either we pass it exactly as written, or the whole country falls apart by next year.",
+        explain:"Two extremes are presented as the only options, erasing every amendment, compromise, or alternative in between. Reality almost always offers a third door.",
+        fix:"Acknowledge the middle ground. Name at least one realistic alternative and explain why your option is better — not why it is the only one."},
+      {name:"Appeal to Authority",confidence:0.74,
+        excerpt:"Professor Hargrove from the institute backed it, so really, what more proof does anyone need?",
+        explain:"An endorsement is offered in place of evidence. Even a genuine expert's approval is not proof — and here the relevance of the authority is simply assumed, not shown.",
+        fix:"Cite the reasoning or data the expert relied on, not merely their name. Let the evidence carry the weight that the title cannot."}
+    ]};
+
+  const LOAD_MSGS=["Reading the argument…","Separating claim from noise…","Tracing the logic…","Cross-examining the claims…","Naming the fallacies…","Preparing your verdict…"];
+
+  let busy=false;
+  function runAnalysis(){
+    if(busy)return; busy=true;
+    document.getElementById('formArea').style.display='none';
+    document.getElementById('runbar').style.display='none';
+    document.getElementById('results').classList.remove('active');
+    const loading=document.getElementById('loading');loading.classList.add('active');
+    const bar=document.getElementById('bar'),pct=document.getElementById('pct'),msg=document.getElementById('loadMsg');
+    let p=0,mi=0;bar.style.width='0%';pct.textContent='0%';msg.textContent=LOAD_MSGS[0];
+    const tick=setInterval(()=>{
+      p+=Math.random()*9+5;if(p>100)p=100;
+      bar.style.width=p+'%';pct.textContent=Math.round(p)+'%';
+      const idx=Math.min(LOAD_MSGS.length-1,Math.floor(p/100*LOAD_MSGS.length));
+      if(idx!==mi){mi=idx;msg.style.opacity=0;setTimeout(()=>{msg.textContent=LOAD_MSGS[idx];msg.style.opacity=1;},120);}
+      if(p>=100){clearInterval(tick);setTimeout(showResults,520);}
+    },230);
+  }
+  function showResults(){
+    document.getElementById('loading').classList.remove('active');
+    renderResults(MOCK);
+    document.getElementById('results').classList.add('active');
+    busy=false;
+    const now=new Date();
+    document.getElementById('rdate').textContent=now.toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'})+' · '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  }
+  function renderResults(data){
+    document.getElementById('rCount').textContent=data.count;
+    document.getElementById('rSev').textContent=data.severity;
+    document.getElementById('rVerdict').textContent=data.verdict;
+    const box=document.getElementById('findings');box.innerHTML='';
+    data.fallacies.forEach((f,i)=>{
+      const pc=Math.round(f.confidence*100);
+      const el=document.createElement('article');el.className='finding';
+      el.innerHTML=`
+        <div class="fhead">
+          <div class="l"><span class="x">✕</span><h3>${String(i+1).padStart(2,'0')} · ${f.name}</h3></div>
+          <div class="conf"><div class="v">${f.confidence.toFixed(2)}</div><div class="meter"><i style="width:${pc}%"></i></div></div>
+        </div>
+        <span class="lab">The triggering passage</span>
+        <p class="excerpt">"${f.excerpt}"</p>
+        <span class="lab">Why it breaks</span>
+        <p class="explain">${f.explain}</p>
+        <div class="fix"><span class="lab">A stronger argument would</span><p>${f.fix}</p></div>`;
+      box.appendChild(el);
+    });
+  }
+  function resetChecker(){
+    if(!document.getElementById('checker').classList.contains('active')) go('checker');
+    document.getElementById('results').classList.remove('active');
+    document.getElementById('formArea').style.display='block';
+    document.getElementById('runbar').style.display='flex';
+    document.getElementById('loading').classList.remove('active');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+</script>
+</body>
+</html>

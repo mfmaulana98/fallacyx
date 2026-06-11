@@ -1,0 +1,21 @@
+# =============================================================================
+# FallacyX Benchmark Script - Optional Dependencies
+# =============================================================================
+# Install with:  pip install -r scripts/requirements-benchmark.txt
+#
+# These are NOT part of the main backend requirements.txt and should NOT be
+# installed in production / inference servers. They are only needed on the
+# machine running the benchmark client.
+# =============================================================================
+
+# HTTP client (async, used for all endpoint calls)
+httpx>=0.27.0
+
+# Progress bars
+tqdm>=4.66.0
+
+# Beautiful terminal tables and colored output
+rich>=13.7.0
+
+# Cross-platform ANSI color fallback
+colorama>=0.4.6
